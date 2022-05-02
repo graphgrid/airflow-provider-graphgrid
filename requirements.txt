@@ -4,3 +4,4 @@ pylint==2.7.4
 coverage2clover==3.3.0
 apache-airflow==2.2.2
 apache-airflow-providers-docker==2.3.0
+docker==5.0.3
