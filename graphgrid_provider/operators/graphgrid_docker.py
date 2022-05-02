@@ -1,3 +1,5 @@
+"""Implement Docker"""
+# pylint: disable=no-name-in-module,import-error
 from typing import Optional, Union
 
 from airflow.exceptions import AirflowException
@@ -5,7 +7,9 @@ from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount, DeviceRequest
 
 
+# pylint: disable=too-few-public-methods
 class GraphGridDockerOperator(DockerOperator):
+    """Extend DockerOperator to add fields and GPU support"""
     template_fields = ('command', 'environment', 'container_name', 'image',
                        'mounts', 'gpu')
 
@@ -13,6 +17,7 @@ class GraphGridDockerOperator(DockerOperator):
                  network_mode="graphgrid",
                  labels: Optional[Union[dict, list]] = None,
                  gpu: Optional[bool] = False, **kwargs):
+        self.container = None
         super().__init__(*args, docker_url=docker_url,
                          network_mode=network_mode, **kwargs)
         if labels is None:
@@ -62,7 +67,8 @@ class GraphGridDockerOperator(DockerOperator):
             return_value = None
             for line in lines:
                 if hasattr(line, 'decode'):
-                    # Note that lines returned can also be byte sequences so we have to handle decode here
+                    # Note that lines returned can also be byte sequences so
+                    # we have to handle decode here
                     line = line.decode('utf-8')
                 line = line.strip()
                 res_lines.append(line)
@@ -86,6 +92,7 @@ class GraphGridDockerOperator(DockerOperator):
 
 
 class GraphgridMount(Mount):
+    """Extend docker mount to be templatized"""
     template_fields = ('source')
 
     def __init__(self, *args, **kwargs):
