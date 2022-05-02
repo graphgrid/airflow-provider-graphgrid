@@ -21,34 +21,35 @@ from unittest import mock
 from unittest.mock import call
 
 import pytest
-from docker.errors import APIError
-
 from airflow.exceptions import AirflowException
+from docker.errors import APIError
 
 try:
     from docker import APIClient
-    from docker.types import Mount
+    from docker.types import Mount, DeviceRequest
 
     from airflow.providers.docker.hooks.docker import DockerHook
 except ImportError:
     pass
 
-from graphgrid_provider.operators.graphgrid_docker import GraphGridDockerOperator
-
+from graphgrid_provider.operators.graphgrid_docker import \
+    GraphGridDockerOperator
 
 TEMPDIR_MOCK_RETURN_VALUE = '/mkdtemp'
 
 
 class TestGraphGridDockerOperator(unittest.TestCase):
     def setUp(self):
-        self.tempdir_patcher = mock.patch('airflow.providers.docker.operators.docker.TemporaryDirectory')
+        self.tempdir_patcher = mock.patch(
+            'airflow.providers.docker.operators.docker.TemporaryDirectory')
         self.tempdir_mock = self.tempdir_patcher.start()
         self.tempdir_mock.return_value.__enter__.return_value = TEMPDIR_MOCK_RETURN_VALUE
 
         self.client_mock = mock.Mock(spec=APIClient)
         self.client_mock.create_container.return_value = {'Id': 'some_id'}
         self.client_mock.images.return_value = []
-        self.client_mock.attach.return_value = ['container log 1', 'container log 2']
+        self.client_mock.attach.return_value = ['container log 1',
+                                                'container log 2']
         self.client_mock.pull.return_value = {"status": "pull log"}
         self.client_mock.wait.return_value = {"StatusCode": 0}
         self.client_mock.create_host_config.return_value = mock.Mock()
@@ -72,7 +73,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             network_mode='bridge',
             owner='unittest',
             task_id='unittest',
-            mounts=[Mount(source='/host/path', target='/container/path', type='bind')],
+            mounts=[Mount(source='/host/path', target='/container/path',
+                          type='bind')],
             entrypoint='["sh", "-c"]',
             working_dir='/container/path',
             shm_size=1000,
@@ -89,7 +91,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
         self.client_mock.create_container.assert_called_once_with(
             command='env',
             name='test_container',
-            environment={'AIRFLOW_TMP_DIR': '/tmp/airflow', 'UNIT': 'TEST', 'PRIVATE': 'MESSAGE'},
+            environment={'AIRFLOW_TMP_DIR': '/tmp/airflow', 'UNIT': 'TEST',
+                         'PRIVATE': 'MESSAGE'},
             host_config=self.client_mock.create_host_config.return_value,
             image='ubuntu:latest',
             user=None,
@@ -100,7 +103,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
         )
         self.client_mock.create_host_config.assert_called_once_with(
             mounts=[
-                Mount(source='/host/path', target='/container/path', type='bind'),
+                Mount(source='/host/path', target='/container/path',
+                      type='bind'),
                 Mount(source='/mkdtemp', target='/tmp/airflow', type='bind'),
             ],
             network_mode='bridge',
@@ -115,15 +119,18 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             privileged=False,
             device_requests=[]
         )
-        self.tempdir_mock.assert_called_once_with(dir='/host/airflow', prefix='airflowtmp')
+        self.tempdir_mock.assert_called_once_with(dir='/host/airflow',
+                                                  prefix='airflowtmp')
         self.client_mock.images.assert_called_once_with(name='ubuntu:latest')
         self.client_mock.attach.assert_called_once_with(
             container='some_id', stdout=True, stderr=True, stream=True
         )
-        self.client_mock.pull.assert_called_once_with('ubuntu:latest', stream=True, decode=True)
+        self.client_mock.pull.assert_called_once_with('ubuntu:latest',
+                                                      stream=True, decode=True)
         self.client_mock.wait.assert_called_once_with('some_id')
         assert (
-            operator.cli.pull('ubuntu:latest', stream=True, decode=True) == self.client_mock.pull.return_value
+                operator.cli.pull('ubuntu:latest', stream=True,
+                                  decode=True) == self.client_mock.pull.return_value
         )
 
     def test_execute_no_temp_dir(self):
@@ -136,7 +143,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             network_mode='bridge',
             owner='unittest',
             task_id='unittest',
-            mounts=[Mount(source='/host/path', target='/container/path', type='bind')],
+            mounts=[Mount(source='/host/path', target='/container/path',
+                          type='bind')],
             mount_tmp_dir=False,
             entrypoint='["sh", "-c"]',
             working_dir='/container/path',
@@ -165,7 +173,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
         )
         self.client_mock.create_host_config.assert_called_once_with(
             mounts=[
-                Mount(source='/host/path', target='/container/path', type='bind'),
+                Mount(source='/host/path', target='/container/path',
+                      type='bind'),
             ],
             network_mode='bridge',
             shm_size=1000,
@@ -184,10 +193,12 @@ class TestGraphGridDockerOperator(unittest.TestCase):
         self.client_mock.attach.assert_called_once_with(
             container='some_id', stdout=True, stderr=True, stream=True
         )
-        self.client_mock.pull.assert_called_once_with('ubuntu:latest', stream=True, decode=True)
+        self.client_mock.pull.assert_called_once_with('ubuntu:latest',
+                                                      stream=True, decode=True)
         self.client_mock.wait.assert_called_once_with('some_id')
         assert (
-            operator.cli.pull('ubuntu:latest', stream=True, decode=True) == self.client_mock.pull.return_value
+                operator.cli.pull('ubuntu:latest', stream=True,
+                                  decode=True) == self.client_mock.pull.return_value
         )
 
     def test_execute_fallback_temp_dir(self):
@@ -204,7 +215,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             network_mode='bridge',
             owner='unittest',
             task_id='unittest',
-            mounts=[Mount(source='/host/path', target='/container/path', type='bind')],
+            mounts=[Mount(source='/host/path', target='/container/path',
+                          type='bind')],
             mount_tmp_dir=True,
             entrypoint='["sh", "-c"]',
             working_dir='/container/path',
@@ -216,8 +228,9 @@ class TestGraphGridDockerOperator(unittest.TestCase):
         with self.assertLogs(operator.log, level=logging.WARNING) as captured:
             operator.execute(None)
             assert (
-                "WARNING:airflow.task.operators:Using remote engine or docker-in-docker "
-                "and mounting temporary volume from host is not supported" in captured.output[0]
+                    "WARNING:airflow.task.operators:Using remote engine or docker-in-docker "
+                    "and mounting temporary volume from host is not supported" in
+                    captured.output[0]
             )
         self.client_class_mock.assert_called_once_with(
             base_url='tcp://socat:2375', tls=None, version='1.19'
@@ -227,7 +240,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                 call(
                     command='env',
                     name='test_container',
-                    environment={'AIRFLOW_TMP_DIR': '/tmp/airflow', 'UNIT': 'TEST', 'PRIVATE': 'MESSAGE'},
+                    environment={'AIRFLOW_TMP_DIR': '/tmp/airflow',
+                                 'UNIT': 'TEST', 'PRIVATE': 'MESSAGE'},
                     host_config=self.client_mock.create_host_config.return_value,
                     image='ubuntu:latest',
                     user=None,
@@ -255,8 +269,10 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             [
                 call(
                     mounts=[
-                        Mount(source='/host/path', target='/container/path', type='bind'),
-                        Mount(source='/mkdtemp', target='/tmp/airflow', type='bind'),
+                        Mount(source='/host/path', target='/container/path',
+                              type='bind'),
+                        Mount(source='/mkdtemp', target='/tmp/airflow',
+                              type='bind'),
                     ],
                     network_mode='bridge',
                     shm_size=1000,
@@ -272,7 +288,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                 ),
                 call(
                     mounts=[
-                        Mount(source='/host/path', target='/container/path', type='bind'),
+                        Mount(source='/host/path', target='/container/path',
+                              type='bind'),
                     ],
                     network_mode='bridge',
                     shm_size=1000,
@@ -288,20 +305,24 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                 ),
             ]
         )
-        self.tempdir_mock.assert_called_once_with(dir='/host/airflow', prefix='airflowtmp')
+        self.tempdir_mock.assert_called_once_with(dir='/host/airflow',
+                                                  prefix='airflowtmp')
         self.client_mock.images.assert_called_once_with(name='ubuntu:latest')
         self.client_mock.attach.assert_called_once_with(
             container='some_id', stdout=True, stderr=True, stream=True
         )
-        self.client_mock.pull.assert_called_once_with('ubuntu:latest', stream=True, decode=True)
+        self.client_mock.pull.assert_called_once_with('ubuntu:latest',
+                                                      stream=True, decode=True)
         self.client_mock.wait.assert_called_once_with('some_id')
         assert (
-            operator.cli.pull('ubuntu:latest', stream=True, decode=True) == self.client_mock.pull.return_value
+                operator.cli.pull('ubuntu:latest', stream=True,
+                                  decode=True) == self.client_mock.pull.return_value
         )
 
     def test_private_environment_is_private(self):
         operator = GraphGridDockerOperator(
-            private_environment={'PRIVATE': 'MESSAGE'}, image='ubuntu:latest', task_id='unittest'
+            private_environment={'PRIVATE': 'MESSAGE'}, image='ubuntu:latest',
+            task_id='unittest'
         )
         assert operator._private_environment == {
             'PRIVATE': 'MESSAGE'
@@ -341,7 +362,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
         originalRaiseExceptions = logging.raiseExceptions
         logging.raiseExceptions = True
 
-        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest', task_id='unittest')
+        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest',
+                                           task_id='unittest')
 
         with mock.patch('traceback.print_exception') as print_exception_mock:
             operator.execute(None)
@@ -350,13 +372,15 @@ class TestGraphGridDockerOperator(unittest.TestCase):
 
     def test_execute_container_fails(self):
         self.client_mock.wait.return_value = {"StatusCode": 1}
-        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest', task_id='unittest')
+        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest',
+                                           task_id='unittest')
         with pytest.raises(AirflowException):
             operator.execute(None)
 
     def test_auto_remove_container_fails(self):
         self.client_mock.wait.return_value = {"StatusCode": 1}
-        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest', task_id='unittest', auto_remove=True)
+        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest',
+                                           task_id='unittest', auto_remove=True)
         operator.container = {'Id': 'some_id'}
         with pytest.raises(AirflowException):
             operator.execute(None)
@@ -367,7 +391,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
     def test_on_kill():
         client_mock = mock.Mock(spec=APIClient)
 
-        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest', task_id='unittest')
+        operator = GraphGridDockerOperator(image='ubuntu', owner='unittest',
+                                           task_id='unittest')
         operator.cli = client_mock
         operator.container = {'Id': 'some_id'}
 
@@ -377,13 +402,15 @@ class TestGraphGridDockerOperator(unittest.TestCase):
 
     def test_execute_no_docker_conn_id_no_hook(self):
         # Create the GraphGridDockerOperator
-        operator = GraphGridDockerOperator(image='publicregistry/someimage', owner='unittest', task_id='unittest')
+        operator = GraphGridDockerOperator(image='publicregistry/someimage',
+                                           owner='unittest', task_id='unittest')
 
         # Mock out the DockerHook
         hook_mock = mock.Mock(name='DockerHook mock', spec=DockerHook)
         hook_mock.get_conn.return_value = self.client_mock
         operator.get_hook = mock.Mock(
-            name='GraphGridDockerOperator.get_hook mock', spec=GraphGridDockerOperator.get_hook, return_value=hook_mock
+            name='GraphGridDockerOperator.get_hook mock',
+            spec=GraphGridDockerOperator.get_hook, return_value=hook_mock
         )
 
         operator.execute(None)
@@ -422,7 +449,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             'network_mode': 'bridge',
             'owner': 'unittest',
             'task_id': 'unittest',
-            'mounts': [Mount(source='/host/path', target='/container/path', type='bind')],
+            'mounts': [Mount(source='/host/path', target='/container/path',
+                             type='bind')],
             'working_dir': '/container/path',
             'shm_size': 1000,
             'host_tmp_dir': '/host/airflow',
@@ -430,9 +458,13 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             'tty': True,
         }
 
-        xcom_push_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=True, xcom_all=False)
-        xcom_all_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=True, xcom_all=True)
-        no_xcom_push_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=False)
+        xcom_push_operator = GraphGridDockerOperator(**kwargs,
+                                                     do_xcom_push=True,
+                                                     xcom_all=False)
+        xcom_all_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=True,
+                                                    xcom_all=True)
+        no_xcom_push_operator = GraphGridDockerOperator(**kwargs,
+                                                        do_xcom_push=False)
 
         xcom_push_result = xcom_push_operator.execute(None)
         xcom_all_result = xcom_all_operator.execute(None)
@@ -444,7 +476,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
 
     def test_execute_xcom_behavior_bytes(self):
         self.client_mock.pull.return_value = [b'{"status":"pull log"}']
-        self.client_mock.attach.return_value = [b'container log 1 ', b'container log 2']
+        self.client_mock.attach.return_value = [b'container log 1 ',
+                                                b'container log 2']
         kwargs = {
             'api_version': '1.19',
             'command': 'env',
@@ -454,7 +487,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             'network_mode': 'bridge',
             'owner': 'unittest',
             'task_id': 'unittest',
-            'mounts': [Mount(source='/host/path', target='/container/path', type='bind')],
+            'mounts': [Mount(source='/host/path', target='/container/path',
+                             type='bind')],
             'working_dir': '/container/path',
             'shm_size': 1000,
             'host_tmp_dir': '/host/airflow',
@@ -462,9 +496,13 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             'tty': True,
         }
 
-        xcom_push_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=True, xcom_all=False)
-        xcom_all_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=True, xcom_all=True)
-        no_xcom_push_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=False)
+        xcom_push_operator = GraphGridDockerOperator(**kwargs,
+                                                     do_xcom_push=True,
+                                                     xcom_all=False)
+        xcom_all_operator = GraphGridDockerOperator(**kwargs, do_xcom_push=True,
+                                                    xcom_all=True)
+        no_xcom_push_operator = GraphGridDockerOperator(**kwargs,
+                                                        do_xcom_push=False)
 
         xcom_push_result = xcom_push_operator.execute(None)
         xcom_all_result = xcom_all_operator.execute(None)
@@ -476,18 +514,32 @@ class TestGraphGridDockerOperator(unittest.TestCase):
 
     def test_extra_hosts(self):
         hosts_obj = mock.Mock()
-        operator = GraphGridDockerOperator(task_id='test', image='test', extra_hosts=hosts_obj)
+        operator = GraphGridDockerOperator(task_id='test', image='test',
+                                           extra_hosts=hosts_obj)
         operator.execute(None)
         self.client_mock.create_container.assert_called_once()
         assert 'host_config' in self.client_mock.create_container.call_args[1]
         assert 'extra_hosts' in self.client_mock.create_host_config.call_args[1]
-        assert hosts_obj is self.client_mock.create_host_config.call_args[1]['extra_hosts']
+        assert hosts_obj is self.client_mock.create_host_config.call_args[1][
+            'extra_hosts']
 
     def test_privileged(self):
         privileged = mock.Mock()
-        operator = GraphGridDockerOperator(task_id='test', image='test', privileged=privileged)
+        operator = GraphGridDockerOperator(task_id='test', image='test',
+                                           privileged=privileged)
         operator.execute(None)
         self.client_mock.create_container.assert_called_once()
         assert 'host_config' in self.client_mock.create_container.call_args[1]
         assert 'privileged' in self.client_mock.create_host_config.call_args[1]
-        assert privileged is self.client_mock.create_host_config.call_args[1]['privileged']
+        assert privileged is self.client_mock.create_host_config.call_args[1][
+            'privileged']
+
+    def test_gpu(self):
+        gpu_obj = True
+        gpu_requests = [DeviceRequest(count=-1, capabilities=[['gpu']])]
+        operator = GraphGridDockerOperator(task_id='test', image='test',
+                                           gpu=gpu_obj)
+        operator.execute(None)
+        self.client_mock.create_container.assert_called_once()
+        assert gpu_requests == self.client_mock.create_host_config.call_args[1][
+            'device_requests']
