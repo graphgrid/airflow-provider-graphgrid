@@ -10,17 +10,17 @@ docker wait python-provider-container
 
 # copy coverage report to build dir
 echo "Copying clover.xml to $2"
-docker cp python-provider-container:/opt/graphgrid-sdk-python/tests/clover.xml $2
+docker cp python-provider-container:/opt/airflow-provider-graphgrid/tests/clover.xml $2
 
 # copy tests results to build dir
 echo "Copying pytest.xml to $2"
-docker cp python-provider-container:/opt/graphgrid-sdk-python/tests/pytest.xml $2
+docker cp python-provider-container:/opt/airflow-provider-graphgrid/tests/pytest.xml $2
 
 # remove python-provider-container
 docker container rm python-provider-container
 
 # lint project
-docker run --rm python-provider-tests -m pylint graphgrid_sdk
+docker run --rm python-provider-tests -m pylint graphgrid_provider
 PYLINT_EXIT_CODE=$?
 
 # cleanup image
