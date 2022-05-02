@@ -10,9 +10,14 @@ with open(os.path.join(top_level_path, "README.md"), "r", encoding="utf-8") as f
 
 setup(
     name=PACKAGE_NAME,
-    version="2.0.0a1",
+    version="0.0.1",
     packages=find_packages(),
     url="https://docs.graphgrid.com/2.0/#/",
+    entry_points={
+        "apache_airflow_provider": [
+            "provider_info=graphgrid_provider.__init__:get_provider_info"
+        ]
+    },
     license="Apache License 2.0",
     author="graphgrid",
     author_email="",
