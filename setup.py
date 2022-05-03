@@ -31,8 +31,8 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     install_requires=[
-        "apache-airflow==2.2.2",
-        "apache-airflow-providers-docker==2.3.0"
+        "apache-airflow>=2.2.2",
+        "apache-airflow-providers-docker>=2.3.0"
     ],
     python_requires="!=3.9.*, >=3.6",
 )
