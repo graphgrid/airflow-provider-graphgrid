@@ -3,5 +3,5 @@ def get_provider_info():
         "package-name": "airflow-provider-graphgrid",
         "name": "GraphGrid Provider Package",
         "description": "Additional airflow functionality for GraphGrid CDP",
-        "versions": ["0.0.1"]
+        "versions": ["2.0.0"]
     }
