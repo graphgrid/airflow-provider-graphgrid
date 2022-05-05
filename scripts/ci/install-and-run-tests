@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# usage:
+# install-and-run-tests $repo_dir $target-build-dir
+cd $1
+docker build -t python-provider-tests -f tests.dockerfile .
+
+# run tests
+docker run --name python-provider-container -d python-provider-tests
+docker wait python-provider-container
+
+# copy coverage report to build dir
+echo "Copying clover.xml to $2"
+docker cp python-provider-container:/opt/airflow-provider-graphgrid/tests/clover.xml $2
+
+# copy tests results to build dir
+echo "Copying pytest.xml to $2"
+docker cp python-provider-container:/opt/airflow-provider-graphgrid/tests/pytest.xml $2
+
+# remove python-provider-container
+docker container rm python-provider-container
+
+# lint project
+docker run --rm python-provider-tests -m pylint graphgrid_provider
+PYLINT_EXIT_CODE=$?
+
+# cleanup image
+docker image rm python-provider-tests
+
+# exit based on pylint exit code
+exit $(($PYLINT_EXIT_CODE % 4))
