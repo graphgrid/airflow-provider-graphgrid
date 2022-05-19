@@ -1,6 +1,7 @@
 """Implement Docker"""
 # pylint: disable=no-name-in-module,import-error
-from typing import Optional, Union
+import os
+from typing import Optional, Union, List, Dict
 
 from airflow.exceptions import AirflowException
 from airflow.providers.docker.operators.docker import DockerOperator
@@ -13,15 +14,44 @@ class GraphGridDockerOperator(DockerOperator):
     template_fields = ('command', 'environment', 'container_name', 'image',
                        'mounts', 'gpu')
 
-    def __init__(self, *args, docker_url="tcp://socat:2375",
+    def __init__(self, *args, mounts: Optional[List[Mount]] = None,
+                 environment: Optional[Dict] = None,
+                 docker_url="tcp://socat:2375",
                  network_mode="graphgrid",
                  labels: Optional[Union[dict, list]] = None,
-                 gpu: Optional[bool] = False, **kwargs):
+                 gpu: Optional[bool] = False,
+                 include_credentials: Optional[bool] = True,
+                 **kwargs):
         self.container = None
+        self.mounts = mounts if mounts is not None else []
+        self.environment = environment if environment is not None else {}
+        if include_credentials:
+            graphgrid_data = os.environ.get("GRAPHGRID_DATA")
+
+            if graphgrid_data is not None:
+                credentials_external_path = os.path.join(graphgrid_data,
+                                                         "graphgrid", "config",
+                                                         "credentials")
+                credentials_internal_path = os.environ.get(
+                    "GRAPHGRID_CONFIG_CREDENTIALS_PATH")
+                credentials_internal_filename = os.environ.get(
+                    "CONFIG_CREDENTIAL_PROPERTIES_FILENAME")
+                if credentials_internal_path is not None:
+                    self.mounts.append(GraphGridMount(
+                        target=credentials_internal_path,
+                        source=credentials_external_path, type="bind"))
+
+                self.environment.update({
+                    "GRAPHGRID_CONFIG_CREDENTIALS_PATH": credentials_internal_path,
+                    "CONFIG_CREDENTIAL_PROPERTIES_FILENAME": credentials_internal_filename
+                })
+
         super().__init__(*args, docker_url=docker_url,
-                         network_mode=network_mode, **kwargs)
+                         network_mode=network_mode, mounts=self.mounts,
+                         environment=self.environment, **kwargs)
         if labels is None:
-            self.labels = {"logspout.exclude": "true"}
+            self.labels = {}
+        self.labels.update({"logspout.exclude": "true"})
         self.gpu = gpu
         self.gpu_request = DeviceRequest(count=-1, capabilities=[['gpu']])
 
