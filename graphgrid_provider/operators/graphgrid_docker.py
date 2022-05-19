@@ -91,7 +91,7 @@ class GraphGridDockerOperator(DockerOperator):
                 self.cli.remove_container(self.container['Id'])
 
 
-class GraphgridMount(Mount):
+class GraphGridMount(Mount):
     """Extend docker mount to be templatized"""
     template_fields = ('source')
 
