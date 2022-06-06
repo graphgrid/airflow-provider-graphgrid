@@ -21,6 +21,7 @@ class GraphGridDockerOperator(DockerOperator):
                  labels: Optional[Union[dict, list]] = None,
                  gpu: Optional[bool] = False,
                  include_credentials: Optional[bool] = True,
+                 task_concurrency: Optional[int] = None,
                  **kwargs):
         self.container = None
         self.mounts = mounts if mounts is not None else []
@@ -48,7 +49,8 @@ class GraphGridDockerOperator(DockerOperator):
 
         super().__init__(*args, docker_url=docker_url,
                          network_mode=network_mode, mounts=self.mounts,
-                         environment=self.environment, **kwargs)
+                         environment=self.environment,
+                         task_concurrency=task_concurrency, **kwargs)
         if labels is None:
             self.labels = {}
         self.labels.update({"logspout.exclude": "true"})
