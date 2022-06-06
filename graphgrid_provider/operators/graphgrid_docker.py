@@ -12,7 +12,7 @@ from docker.types import Mount, DeviceRequest
 class GraphGridDockerOperator(DockerOperator):
     """Extend DockerOperator to add fields and GPU support"""
     template_fields = ('command', 'environment', 'container_name', 'image',
-                       'mounts', 'gpu')
+                       'mounts', 'gpu', 'task_concurrency')
 
     def __init__(self, *args, mounts: Optional[List[Mount]] = None,
                  environment: Optional[Dict] = None,
