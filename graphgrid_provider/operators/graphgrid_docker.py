@@ -26,6 +26,7 @@ class GraphGridDockerOperator(DockerOperator):
         self.container = None
         self.mounts = mounts if mounts is not None else []
         self.environment = environment if environment is not None else {}
+        self.task_concurrency = task_concurrency
         if include_credentials:
             graphgrid_data = os.environ.get("GRAPHGRID_DATA")
 
