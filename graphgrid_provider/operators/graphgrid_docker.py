@@ -12,7 +12,7 @@ from docker.types import Mount, DeviceRequest
 class GraphGridDockerOperator(DockerOperator):
     """Extend DockerOperator to add fields and GPU support"""
     template_fields = ('command', 'environment', 'container_name', 'image',
-                       'mounts', 'gpu', 'task_concurrency')
+                       'mounts', 'gpu')
 
     def __init__(self, *args, mounts: Optional[List[Mount]] = None,
                  environment: Optional[Dict] = None,
@@ -21,12 +21,10 @@ class GraphGridDockerOperator(DockerOperator):
                  labels: Optional[Union[dict, list]] = None,
                  gpu: Optional[bool] = False,
                  include_credentials: Optional[bool] = True,
-                 task_concurrency: Optional[int] = None,
                  **kwargs):
         self.container = None
         self.mounts = mounts if mounts is not None else []
         self.environment = environment if environment is not None else {}
-        self.task_concurrency = task_concurrency
         if include_credentials:
             graphgrid_data = os.environ.get("GRAPHGRID_DATA")
 
@@ -50,8 +48,7 @@ class GraphGridDockerOperator(DockerOperator):
 
         super().__init__(*args, docker_url=docker_url,
                          network_mode=network_mode, mounts=self.mounts,
-                         environment=self.environment,
-                         task_concurrency=task_concurrency, **kwargs)
+                         environment=self.environment, **kwargs)
         if labels is None:
             self.labels = {}
         self.labels.update({"logspout.exclude": "true"})
@@ -81,7 +78,8 @@ class GraphGridDockerOperator(DockerOperator):
                 cap_add=self.cap_add,
                 extra_hosts=self.extra_hosts,
                 privileged=self.privileged,
-                device_requests=[self.gpu_request] if self.gpu else []
+                device_requests=[self.gpu_request] if self.gpu else [],
+                pid_mode="host",
             ),
             image=self.image,
             user=self.user,
