@@ -117,7 +117,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             cap_add=None,
             extra_hosts=None,
             privileged=False,
-            device_requests=[]
+            device_requests=[],
+            pid_mode="host",
         )
         self.tempdir_mock.assert_called_once_with(dir='/host/airflow',
                                                   prefix='airflowtmp')
@@ -186,7 +187,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             cap_add=None,
             extra_hosts=None,
             privileged=False,
-            device_requests=[]
+            device_requests=[],
+            pid_mode="host",
         )
         self.tempdir_mock.assert_not_called()
         self.client_mock.images.assert_called_once_with(name='ubuntu:latest')
@@ -284,7 +286,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                     cap_add=None,
                     extra_hosts=None,
                     privileged=False,
-                    device_requests=[]
+                    device_requests=[],
+                    pid_mode="host",
                 ),
                 call(
                     mounts=[
@@ -301,7 +304,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                     cap_add=None,
                     extra_hosts=None,
                     privileged=False,
-                    device_requests=[]
+                    device_requests=[],
+                    pid_mode="host",
                 ),
             ]
         )

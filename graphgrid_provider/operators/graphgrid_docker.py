@@ -78,7 +78,8 @@ class GraphGridDockerOperator(DockerOperator):
                 cap_add=self.cap_add,
                 extra_hosts=self.extra_hosts,
                 privileged=self.privileged,
-                device_requests=[self.gpu_request] if self.gpu else []
+                device_requests=[self.gpu_request] if self.gpu else [],
+                pid_mode="host",
             ),
             image=self.image,
             user=self.user,
