@@ -22,6 +22,7 @@ class GraphGridDockerOperator(DockerOperator):
                  gpu: Optional[bool] = False,
                  include_credentials: Optional[bool] = True,
                  gpu_label: Optional[bool] = False,
+                 gpu_healthcheck: Optional[bool] = False,
                  **kwargs):
         self.container = None
         self.mounts = mounts if mounts is not None else []
@@ -55,21 +56,22 @@ class GraphGridDockerOperator(DockerOperator):
         self.labels.update({"logspout.exclude": "true"})
         self.gpu = gpu
         self.gpu_label = gpu_label
-        if self.gpu_label:
+        if self.gpu_label and self.gpu:
             self.labels.update({"gpu.container": "true"})
         self.gpu_request = DeviceRequest(count=-1, capabilities=[['gpu']])
-        self.gpu_healthcheck = "import os; " \
-                               "import subprocess; " \
-                               "import pandas as pd; " \
-                               "import io; " \
-                               "pid = os.getpid(); " \
-                               "process_check = subprocess.run('nvidia-smi --query-compute-apps=gpu_name,pid,process_name --format=csv'.split(), stdout=subprocess.PIPE); " \
-                               "io_string = io.StringIO(process_check.stdout.decode()); " \
-                               "processes_df = pd.read_csv(io_string, sep=', '); " \
-                               "gpu_0 = processes_df['gpu_name'].unique()[0]; " \
-                               "gpu_0_processes_df = processes_df.loc[processes_df['gpu_name'] == gpu_0]; " \
-                               "compute_pids = gpu_0_processes_df.loc[gpu_0_processes_df['process_name'] != 'java']['pid'].to_list(); " \
-                               "assert pid in compute_pids"
+        self.gpu_healthcheck = gpu_healthcheck
+        self.healthcheck = "import os; " \
+                           "import subprocess; " \
+                           "import pandas as pd; " \
+                           "import io; " \
+                           "pid = os.getpid(); " \
+                           "process_check = subprocess.run('nvidia-smi --query-compute-apps=gpu_name,pid,process_name --format=csv'.split(), stdout=subprocess.PIPE); " \
+                           "io_string = io.StringIO(process_check.stdout.decode()); " \
+                           "processes_df = pd.read_csv(io_string, sep=', '); " \
+                           "gpu_0 = processes_df['gpu_name'].unique()[0]; " \
+                           "gpu_0_processes_df = processes_df.loc[processes_df['gpu_name'] == gpu_0]; " \
+                           "compute_pids = gpu_0_processes_df.loc[gpu_0_processes_df['process_name'] != 'java']['pid'].to_list(); " \
+                           "assert pid in compute_pids"
 
     def _run_image_with_mounts(self, target_mounts, add_tmp_variable: bool) -> \
             Optional[str]:
@@ -104,12 +106,12 @@ class GraphGridDockerOperator(DockerOperator):
             tty=self.tty,
             labels=self.labels,
             healthcheck={
-                "Test": ["CMD", "python3", "-c", self.gpu_healthcheck],
+                "Test": ["CMD", "python3", "-c", self.healthcheck],
                 "Interval": "5s",
                 "Timeout": "30s",
                 "Retries": 3,
                 "StartPeriod": "0s"
-            } if self.gpu else {},
+            } if self.gpu and self.gpu_healthcheck else {},
         )
         lines = self.cli.attach(container=self.container['Id'], stdout=True,
                                 stderr=True, stream=True)
