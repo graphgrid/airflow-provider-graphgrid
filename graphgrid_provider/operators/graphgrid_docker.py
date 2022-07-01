@@ -71,7 +71,8 @@ class GraphGridDockerOperator(DockerOperator):
                            "gpu_0 = processes_df['gpu_name'].unique()[0]; " \
                            "gpu_0_processes_df = processes_df.loc[processes_df['gpu_name'] == gpu_0]; " \
                            "compute_pids = gpu_0_processes_df.loc[gpu_0_processes_df['process_name'] != 'java']['pid'].to_list(); " \
-                           "assert pid in compute_pids"
+                           "pid_list = [subprocess.run(f'ps --no-header -p {compute_pid}', stdout=subprocess.PIPE).stdout.decode != '' for compute_pid in compute_pids]; " \
+                           "assert True in pid_list"
 
     def _run_image_with_mounts(self, target_mounts, add_tmp_variable: bool) -> \
             Optional[str]:
