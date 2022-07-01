@@ -107,10 +107,10 @@ class GraphGridDockerOperator(DockerOperator):
             labels=self.labels,
             healthcheck={
                 "Test": ["CMD", "python3", "-c", self.healthcheck],
-                "Interval": "5s",
-                "Timeout": "30s",
+                "Interval": 5_000_000_000,
+                "Timeout": 30_000_000_000,
                 "Retries": 3,
-                "StartPeriod": "0s"
+                "StartPeriod": 0
             } if self.gpu and self.gpu_healthcheck else {},
         )
         lines = self.cli.attach(container=self.container['Id'], stdout=True,
