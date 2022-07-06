@@ -99,7 +99,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             entrypoint=['sh', '-c'],
             working_dir='/container/path',
             tty=True,
-            labels={'logspout.exclude': 'true'}
+            labels={'logspout.exclude': 'true'},
+            healthcheck={},
         )
         self.client_mock.create_host_config.assert_called_once_with(
             mounts=[
@@ -170,7 +171,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
             entrypoint=['sh', '-c'],
             working_dir='/container/path',
             tty=True,
-            labels={'logspout.exclude': 'true'}
+            labels={'logspout.exclude': 'true'},
+            healthcheck={},
         )
         self.client_mock.create_host_config.assert_called_once_with(
             mounts=[
@@ -250,8 +252,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                     entrypoint=['sh', '-c'],
                     working_dir='/container/path',
                     tty=True,
-                    labels={'logspout.exclude': 'true'}
-
+                    labels={'logspout.exclude': 'true'},
+                    healthcheck={},
                 ),
                 call(
                     command='env',
@@ -263,7 +265,8 @@ class TestGraphGridDockerOperator(unittest.TestCase):
                     entrypoint=['sh', '-c'],
                     working_dir='/container/path',
                     tty=True,
-                    labels={'logspout.exclude': 'true'}
+                    labels={'logspout.exclude': 'true'},
+                    healthcheck={},
                 ),
             ]
         )

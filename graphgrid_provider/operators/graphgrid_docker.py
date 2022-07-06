@@ -21,6 +21,8 @@ class GraphGridDockerOperator(DockerOperator):
                  labels: Optional[Union[dict, list]] = None,
                  gpu: Optional[bool] = False,
                  include_credentials: Optional[bool] = True,
+                 gpu_label: Optional[bool] = False,
+                 gpu_healthcheck: Optional[bool] = False,
                  **kwargs):
         self.container = None
         self.mounts = mounts if mounts is not None else []
@@ -53,7 +55,24 @@ class GraphGridDockerOperator(DockerOperator):
             self.labels = {}
         self.labels.update({"logspout.exclude": "true"})
         self.gpu = gpu
+        self.gpu_label = gpu_label
+        if self.gpu_label and self.gpu:
+            self.labels.update({"gpu.container": "true"})
         self.gpu_request = DeviceRequest(count=-1, capabilities=[['gpu']])
+        self.gpu_healthcheck = gpu_healthcheck
+        self.healthcheck = "import os; " \
+                           "import subprocess; " \
+                           "import pandas as pd; " \
+                           "import io; " \
+                           "pid = os.getpid(); " \
+                           "process_check = subprocess.run('nvidia-smi --query-compute-apps=gpu_name,pid,process_name --format=csv'.split(), stdout=subprocess.PIPE); " \
+                           "io_string = io.StringIO(process_check.stdout.decode()); " \
+                           "processes_df = pd.read_csv(io_string, sep=', '); " \
+                           "gpu_0 = processes_df['gpu_name'].unique()[0]; " \
+                           "gpu_0_processes_df = processes_df.loc[processes_df['gpu_name'] == gpu_0]; " \
+                           "compute_pids = gpu_0_processes_df.loc[gpu_0_processes_df['process_name'] != 'java']['pid'].to_list(); " \
+                           "pid_list = [subprocess.run(f'ps --no-header -p {compute_pid}'.split(' '), stdout=subprocess.PIPE).stdout.decode != '' for compute_pid in compute_pids]; " \
+                           "assert True in pid_list"
 
     def _run_image_with_mounts(self, target_mounts, add_tmp_variable: bool) -> \
             Optional[str]:
@@ -87,6 +106,13 @@ class GraphGridDockerOperator(DockerOperator):
             working_dir=self.working_dir,
             tty=self.tty,
             labels=self.labels,
+            healthcheck={
+                "Test": ["CMD", "python3", "-c", self.healthcheck],
+                "Interval": 5_000_000_000,
+                "Timeout": 30_000_000_000,
+                "Retries": 3,
+                "StartPeriod": 0
+            } if self.gpu and self.gpu_healthcheck else {},
         )
         lines = self.cli.attach(container=self.container['Id'], stdout=True,
                                 stderr=True, stream=True)
